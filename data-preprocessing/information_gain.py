@@ -13,17 +13,26 @@ base_permission = BasePermission()
 logger = DetectorLogger(path='/home/wtq/Desktop/Android-reference/android-ad-reference/ad_premission_gain.log')
 
 
-def calc_shannon_ent(dataset):
+def calc_shannon_ent(dataset, sign):
+    """
+    使用信息增益比来替代信息增益来选择特征，避免选择取值较多的特征问题，传入sign， sign为-1时根据传入的dataset不同
+    计算输出数据集D的经验商，或者特征A对于数据集D的经验条件商（输入的数据集为经过split_dataset()切分输出的数据）
+    当输入为特征A在数据集中的序号时，计算得出的为训练数据集D关于特征A的商,该商在算信息增益比时用到
+    :param dataset:
+    :return:
+    """
     num_entry = len(dataset)
     label_count = {}
     for feat_vec in dataset:
-        current_label = feat_vec[-1]
+        current_label = feat_vec[sign]
         if current_label not in label_count.keys():
             label_count[current_label] = 0
-            label_count[current_label] += 1
+        label_count[current_label] += 1
     shannon_ent = 0.0
     for key in label_count:
+
         prob = float(label_count[key])/num_entry
+        # print prob, key, num_entry, sign
         shannon_ent -= prob * log(prob, 2)
     return shannon_ent
 
@@ -40,10 +49,11 @@ def split_dataset(data_set, axis, value):
 
 def choose_best_feature(data_set):
     num_features = len(data_set[0]) - 1
-    base_entropy = calc_shannon_ent(data_set)
+    base_entropy = calc_shannon_ent(data_set, -1)
     best_info_gain = 0.0
     best_feature = -1
     info_gain_dict = {}
+    # i is the ith feature of the dataset
     for i in range(num_features):
         # get the value of the ith feature
         feat_list = [example[i] for example in data_set]
@@ -51,12 +61,17 @@ def choose_best_feature(data_set):
         # get single value of the ith feature then use to split dataset
         unique_vals = set(feat_list)
         # print unique_vals
+        ith_shannon = calc_shannon_ent(data_set, i)
+        print 'ith', ith_shannon
         new_entropy = 0.0
         for value in unique_vals:
             sub_dataset = split_dataset(data_set, i, value)
             prob = len(sub_dataset)/float(len(data_set))
-            new_entropy += prob * calc_shannon_ent(sub_dataset)
-        info_gain = base_entropy - new_entropy
+            new_entropy += prob * calc_shannon_ent(sub_dataset, -1)
+        if ith_shannon != 0.0:
+            info_gain = (base_entropy - new_entropy)/ith_shannon
+        else:
+            info_gain = (base_entropy - new_entropy)
         info_gain_dict[i] = info_gain
         # print 'info_gain', info_gain
 
@@ -91,8 +106,10 @@ if __name__ == '__main__':
                 [0, 1, 'no'],
                 [0, 1, 'no'],
                 [0, 0, 'no']]
-    # print calc_shannon_ent(data_set)
+
     # print split_dataset(data_set, 0, 1)
+    # best, info_gain, sort_gain = choose_best_feature(data_set)
+    # print sort_gain
     ad_permission = get_permission_feature()
     best_fea, info_gain, sort_gain = choose_best_feature(ad_permission)
     logger.info(sort_gain)
