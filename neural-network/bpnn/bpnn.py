@@ -8,7 +8,9 @@ from numpy import *
 from preprocessing.load_data_set import load_data_nnet
 from preprocessing.normalization.normailization import auto_norm
 from preprocessing.normalization.normailization import auti_norm
+from detector.logger import DetectorLogger
 
+logger = DetectorLogger()
 
 def sigmoid(inx):
     return 1.0/(1+exp(-inx))
@@ -114,7 +116,7 @@ class NN:
 
         return self.output
 
-    def back_propagate(self, targets, learningrate, momentum):
+    def back_propagate(self, iteration_times, sample_times, targets, learningrate, momentum):
         """
 
         :param targets:  the ture output for the input
@@ -139,8 +141,12 @@ class NN:
                 error = error + output_deltas[k] * self.outputweights[j][k]
             hidden_deltas[j] = dsigmoid(self.hidden_in[j]) * error
 
+        # 动态调整学习步长，使其越来越小
+        learningrate = 4.0/(3.0+sample_times+iteration_times) + 0.01
+
         # update output weights
         for j in range(self.numhidden):
+
             for k in range(self.numoutput):
                 # 隐藏层第j个节点向输出层上各个节点输出时的值是相等的，为self.hiddenact[j
                 change = output_deltas[k] * self.hiddenact[j]
@@ -149,6 +155,7 @@ class NN:
 
         # update input weights
         for i in range(self.numinput):
+
             for j in range(self.numhidden):
                 change = hidden_deltas[j] * self.inputact[i]
                 self.inputweights[i][j] += learningrate * change + momentum * self.inputchange[i][j]
@@ -163,7 +170,7 @@ class NN:
             error = error + (targets[k] - self.output[k])
         return error
 
-    def train(self, patterns, iterations=100, learningrate=0.02, momentum=0.01):
+    def train(self, patterns, iterations=30, learningrate=0.02, momentum=0.01):
         """
         training network a patterns
         :param patterns: the train sample
@@ -174,18 +181,18 @@ class NN:
         """
         for i in range(iterations):
             error = 0.0
-
+            simaple_times = 0
             for p in patterns:
                 inputs = p[0]
                 targets = p[1]
-
+                simaple_times += 1
                 # 采用随机梯度下降，对于一个特定样本用update()正向激活
                 # 再用back_propagate()反向计算误差
                 self.update(inputs)
-                error = error + self.back_propagate(targets, learningrate, momentum)
+                error = error + self.back_propagate(i, simaple_times, targets, learningrate, momentum)
 
             # 输出一次迭代的各个样本的训练误差之和
-            print ('error %-.5f' % error)
+            logger.info('error %-.5f' % error)
 
 
 def test():
