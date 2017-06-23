@@ -18,5 +18,7 @@ def l1_regular():
     lasso.fit(x, y)
     # print 'lasso model: ', pretty_print_linear(lasso.coef_, names, sort = True)
 
+
 if __name__ == "__main__":
     l1_regular()
+

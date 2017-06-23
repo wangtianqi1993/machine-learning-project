@@ -8,8 +8,9 @@ from math import log
 from detector.ad.permission.base import BasePermission
 from detector.config import *
 from detector.logger import DetectorLogger
+from operate_data.get_permission_data import get_permission_data, base_permission
 
-base_permission = BasePermission()
+# base_permission = BasePermission()
 logger = DetectorLogger(path='/home/wtq/Desktop/Android-reference/android-ad-reference/ad_premission_gain.log')
 
 
@@ -68,17 +69,18 @@ def choose_best_feature(data_set):
             sub_dataset = split_dataset(data_set, i, value)
             prob = len(sub_dataset)/float(len(data_set))
             new_entropy += prob * calc_shannon_ent(sub_dataset, -1)
-        if ith_shannon != 0.0:
-            info_gain = (base_entropy - new_entropy)/ith_shannon
-        else:
-            info_gain = (base_entropy - new_entropy)
+        # if ith_shannon != 0.0:
+        #     info_gain = (base_entropy - new_entropy)/ith_shannon
+        # else:
+        #     info_gain = (base_entropy - new_entropy)
+        info_gain = base_entropy - new_entropy
         info_gain_dict[i] = info_gain
         # print 'info_gain', info_gain
 
         if (info_gain > best_info_gain):
             best_info_gain = info_gain
             best_feature = i
-    sort_gain_dict = sorted(info_gain_dict.items(), key = lambda info_gain_dict:info_gain_dict[1])
+    sort_gain_dict = sorted(info_gain_dict.items(), key = lambda info_gain_dict:info_gain_dict[1], reverse=True)
     return best_feature, info_gain_dict, sort_gain_dict
 
 
@@ -106,10 +108,10 @@ if __name__ == '__main__':
                 [0, 1, 'no'],
                 [0, 1, 'no'],
                 [0, 0, 'no']]
+    per_feature = get_permission_data("/home/wtq/develop/workspace/gitlab/android-app-security-detector/detector/yuankong_malware/feature/benign_permission.json",
+                                      "/home/wtq/develop/workspace/gitlab/android-app-security-detector/detector/yuankong_malware/feature/malware_permission.json")
 
-    # print split_dataset(data_set, 0, 1)
-    # best, info_gain, sort_gain = choose_best_feature(data_set)
-    # print sort_gain
-    ad_permission = get_permission_feature()
-    best_fea, info_gain, sort_gain = choose_best_feature(ad_permission)
+    best, info_gain, sort_gain = choose_best_feature(per_feature)
+    for item in sort_gain:
+        print base_permission[item[0]]
     logger.info(sort_gain)

@@ -32,6 +32,9 @@ def train_logistic_regression(data_mat_in, class_labels, opts):
     alpha = opts['alpha']
     max_cycles = opts['max_cycles']
     weights = ones((num_features, 1))
+    # print "data_matrix", data_matrix
+    # print "data_label", label_mat
+    # print "mul", data_matrix*weights
 
     for k in range(max_cycles):
         # 最原始的梯度下降法将整个训练集合中的所有样本与weights相乘，叠加求和再计算误差
@@ -43,6 +46,9 @@ def train_logistic_regression(data_mat_in, class_labels, opts):
         if opts['optimize_type'] == 'graddescent':
             output = sigmoid(data_matrix*weights)
             error = (label_mat - output)
+            # print "data_matrix...", data_matrix.transpose()
+            print "error...", error
+            # print "mul...", data_matrix.transpose()*error
             weights = weights + alpha * data_matrix.transpose()*error
 
         elif opts['optimize_type'] == 'stoc_graddescent':
@@ -50,21 +56,26 @@ def train_logistic_regression(data_mat_in, class_labels, opts):
             for i in range(num_samples):
                 output = sigmoid(data_matrix[i, :]*weights)
                 error = label_mat[i, 0] - output
+                # print "data_matrix", data_matrix[i, :].transpose()
+                print "error..", error
+                # print "mul..", data_matrix[i, :].transpose()*error
                 weights = weights + alpha*data_matrix[i, :].transpose()*error
 
         elif opts['optimize_type'] == 'smooth_stoc_graddescent':
             # 基于步长逐渐减小的优化梯度下降,且随机的选择样本
             data_index = range(num_samples)
             for i in range(num_samples):
-                alpha = 4.0 / (1.0 + k +i) + 0.01
+                alpha = 4.0 / (1.0 + k + i) + 0.01
                 rand_index = int(random.uniform(0, len(data_index)))
                 output = sigmoid(data_matrix[data_index[rand_index], :]*weights)
                 error = label_mat[data_index[rand_index], 0] - output
                 weights = weights + alpha * data_matrix[data_index[rand_index], :].transpose()*error
                 # during one interation, delete the optimized sample
                 del(data_index[rand_index])
+
         else:
             raise NameError('Not support optimize method type!')
+
     print 'Congratulations, training complete! Took %fs!' % (time.time() - start_time)
     return weights
 
@@ -116,10 +127,11 @@ if __name__ == "__main__":
     test_parameter = {}
     test_parameter['alpha'] = 0.001
     test_parameter['max_cycles'] = 100
-    test_parameter['optimize_type'] = 'smooth_stoc_graddescent'
+    test_parameter['optimize_type'] = 'stoc_graddescent'
     train_data, train_label = load_data_set('test_data.txt')
-    w = train_logistic_regression(train_data, train_label, test_parameter)
-    show_logistic_regression(w, train_data, train_label)
+    print train_data, train_label
+    #w = train_logistic_regression(train_data, train_label, test_parameter)
+    #show_logistic_regression(w, train_data, train_label)
     # logger.info(test_parameter['optimize_type'])
     # logger.info(w)
     # logger.info('test result')
